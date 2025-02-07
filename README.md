@@ -1,4 +1,2 @@
-XMTV-Import
+EPG IMPORT MODDED FOR DREAMBOX ENIGMA2
 ===========
-
-Import's EPG data from rytec xml data sources.
