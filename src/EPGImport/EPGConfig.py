@@ -123,7 +123,7 @@ class EPGChannel:
 		return fd
 
 	def parse(self, filterCallback, downloadedFile, FilterChannelEnabled):
-		print("[EPGImport] EPGChannel - Parsing channels from '%s'" % self.name)
+		print("[EPGImport]EPGChannel Parsing channels from '%s'" % self.name)
 		channel_id_filter = set_channel_id_filter()
 		if self.items is None:
 			self.items = {}

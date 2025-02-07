@@ -1255,9 +1255,9 @@ def main(session, **kwargs):
 
 def doneConfiguring(session, retval=False):
 	'''user has closed configuration, check new values....'''
-	# if retval is True:
-	if autoStartTimer is not None:
-		autoStartTimer.update()
+	if retval is True:
+		if autoStartTimer is not None:
+			autoStartTimer.update()
 
 
 def doneImport(reboot=False, epgfile=None):
@@ -1685,7 +1685,7 @@ def setExtensionsmenu(el):
 
 description = _("Automated EPG Importer")
 config.plugins.epgimport.showinextensions.addNotifier(setExtensionsmenu, initial_call=False, immediate_feedback=False)
-extDescriptor = PluginDescriptor(name=_("EPGimport now"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=start_import)
+extDescriptor = PluginDescriptor(name=_("EPGImport now"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=start_import)
 # extDescriptor = PluginDescriptor(name=_("EPGImport"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=extensionsmenu)
 pluginlist = PluginDescriptor(name=_("EPGImport"), description=description, where=PluginDescriptor.WHERE_PLUGINMENU, icon='plugin.png', fnc=main)
 

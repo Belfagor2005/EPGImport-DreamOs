@@ -20,18 +20,25 @@ else:
 def getMountPoints():
 	mount_points = []
 	try:
+		from os import access, W_OK
 		with open('/proc/mounts', 'r') as mounts:
 			for line in mounts:
 				parts = line.split()
 				mount_point = parts[1]
-				if os.path.ismount(mount_point) and os.access(mount_point, os.W_OK):
+				if os.path.ismount(mount_point) and access(mount_point, W_OK):
 					mount_points.append(mount_point)
 	except Exception as e:
-		print("[EPGImport] Errore durante la lettura di /proc/mounts:", e)
+		print("[EPGImport] Error reading /proc/mounts:", e)
 	return mount_points
 
 
 mount_points = getMountPoints()
+mount_point = None
+for mp in mount_points:
+	epg_path = os.path.join(mp, 'epg.dat')
+	if os.path.exists(epg_path):
+		mount_point = epg_path
+		break
 
 
 class epgdatclass:

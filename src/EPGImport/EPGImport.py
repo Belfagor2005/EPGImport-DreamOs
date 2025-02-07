@@ -78,17 +78,19 @@ def getMountPoints():
 	mount_points = []
 	try:
 		from os import access, W_OK
-		mounts = open('/proc/mounts', 'rb').readlines()
-		mount_point = [x.split(' ', 2)[1] for x in mounts]
-		if ismount(mount_point) and access(mount_point, W_OK):
-			mount_points.append(mount_point)
+		with open('/proc/mounts', 'r') as mounts:
+			for line in mounts:
+				parts = line.split()
+				mount_point = parts[1]
+				if ismount(mount_point) and access(mount_point, W_OK):
+					mount_points.append(mount_point)
 	except Exception as e:
-		print("[EPGImport]Error reading /proc/mounts:", str(e))
+		print("[EPGImport] Error reading /proc/mounts:", e)
 	return mount_points
 
 
-mount_point = None
 mount_points = getMountPoints()
+mount_point = None
 for mp in mount_points:
 	epg_path = join(mp, 'epg.dat')
 	if exists(epg_path):
@@ -108,7 +110,6 @@ def relImport(name):
 	mod = __import__('.'.join(fullname))
 	for n in fullname[1:]:
 		mod = getattr(mod, n)
-
 	return mod
 
 
@@ -276,6 +277,7 @@ class EPGImport:
 		elif hasattr(self.epgcache, 'importEvent'):
 			# print('[EPGImport][beginImport] using importEvent(Oudis).')
 			self.storage = OudeisImporter(self.epgcache)
+			self.saveEPGCache()  # lululla
 		else:
 			print('[EPGImport][beginImport] oudeis patch not detected, using using epgdat_importer.epgdatclass/epg.dat instead.')
 			from . import epgdat_importer
@@ -312,14 +314,13 @@ class EPGImport:
 		return
 
 	def urlDownload(self, sourcefile, afterDownload, downloadFail):
-		path = bigStorage(9000000, '/media/hdd', *mount_points)
+		path = bigStorage(9000000, '/hdd', *mount_points)
 		if not path or not isdir(path):
 			print("[EPGImport] Invalid path, using '/tmp'")
 			path = '/tmp'  # Use fallback /tmp if invalid path, using.
 		if "meia" in path:  # mistake ("media != meia)
 			path = path.replace("meia", "media")
 		filename = join(path, 'epgimport')
-
 		ext = splitext(sourcefile)[1]
 		if ext and len(ext) < 6:
 			filename += ext.decode("utf-8", "ignore") if isinstance(ext, bytes) else ext
@@ -335,7 +336,7 @@ class EPGImport:
 				ip6 = getaddrinfo(host, 0, AF_INET6)
 				sourcefile6 = sourcefile.replace(host, '[' + list(ip6)[0][4][0] + ']')
 			except Exception as e:
-				print(str(e))
+				# print(str(e))
 				pass
 
 		if ip6:
@@ -399,6 +400,7 @@ class EPGImport:
 				self.fd.seek(0, 0)
 			except Exception as e:
 				print("[EPGImport][afterDownload] File downloaded is not a valid gzip file %s" % filename)
+				unlink_if_exists(filename)
 				self.downloadFail(e)
 				return
 
@@ -415,7 +417,7 @@ class EPGImport:
 				print("[EPGImport][afterDownload] File downloaded is not a valid xz file", filename)
 				try:
 					print("[EPGImport][afterDownload] unlink", filename)
-					unlink(filename)
+					unlink_if_exists(filename)
 				except Exception as e:
 					print("[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" % filename, str(e))
 				self.downloadFail(e)
@@ -426,8 +428,8 @@ class EPGImport:
 
 		if deleteFile and self.source.parser != 'epg.dat':
 			try:
-				print("[EPGImport][afterDownload] unlink ", filename)
-				unlink(filename)
+				print("[EPGImport][afterDownload] unlink", filename)
+				unlink_if_exists(filename)
 			except Exception as e:
 				print("[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" % filename, str(e))
 
@@ -442,6 +444,8 @@ class EPGImport:
 
 	def downloadFail(self, failure):
 		# log.write("[EPGImport][downloadFail] download failed:" + failure + '\n')
+		if self.source.url in self.source.urls:
+			self.source.urls.remove(self.source.url)
 		self.source.urls.remove(self.source.url)
 		if self.source.urls:
 			print("[EPGImport][downloadFail] Attempting alternative URL")
@@ -471,7 +475,7 @@ class EPGImport:
 
 		if deleteFile and filename:
 			try:
-				unlink(filename)
+				unlink_if_exists(filename)
 			except Exception as e:
 				print("[EPGImport][afterChannelDownload] warning: Could not remove '%s' intermediate" % filename, str(e))
 
@@ -543,7 +547,7 @@ class EPGImport:
 		print("[EPGImport][doThreadRead] ### thread is ready ### Events:", self.eventCount)
 		if filename:
 			try:
-				unlink(filename)
+				unlink_if_exists(filename)
 			except Exception as e:
 				print("[EPGImport][doThreadRead] warning: Could not remove '%s' intermediate" % filename, str(e))
 
