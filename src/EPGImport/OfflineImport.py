@@ -7,8 +7,8 @@
 # where they can be found. On Linux, you can also download from the internet,
 # on windows the xmltv files must be local files.
 
-
 from __future__ import absolute_import, print_function
+
 import sys
 import time
 
@@ -46,7 +46,7 @@ def importFrom(epgimport, sourceXml):
 				if self.r is r:
 					self.r = None
 				else:
-					print("Removed reader without adding it")
+					raise Exception("Removed reader without adding it")
 
 			def run(self):
 				while self.r is not None:

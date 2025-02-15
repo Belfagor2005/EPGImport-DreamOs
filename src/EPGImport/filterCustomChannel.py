@@ -4,8 +4,9 @@
 from Components.config import config
 from re import sub
 from sys import version_info
-from six import ensure_str
 from xml.sax.saxutils import unescape
+from six import ensure_str
+
 try:
 	from xml.etree.cElementTree import iterparse
 except ImportError:
@@ -14,8 +15,8 @@ except ImportError:
 
 PY3 = (version_info[0] == 3)
 
-
 global filterCustomChannel
+
 
 # Verifica che la configurazione epgimport sia definita
 if hasattr(config.plugins, "epgimport") and hasattr(config.plugins.epgimport, "filter_custom_channel"):
@@ -43,6 +44,32 @@ def get_xml_rating_string(elem):
 	return ensure_str(r)
 
 
+def get_xml_string(elem, name):
+	r = ''
+	try:
+		for node in elem.findall(name):
+			txt = node.text
+			lang = node.get('lang', None)
+			if not r and txt is not None:
+				r = txt
+			elif lang == "nl":
+				r = txt
+	except Exception as e:
+		print("[XMLTVConverter] get_xml_string error:", e)
+	# Now returning UTF-8 by default, the epgdat/oudeis must be adjusted to make this work.
+	# Note that the default xml.sax.saxutils.unescape() function don't unescape
+	# some characters and we have to manually add them to the entities dictionary.
+	r = unescape(r, entities={
+		r"&apos;": r"'",
+		r"&quot;": r'"',
+		r"&#124;": r"|",
+		r"&nbsp;": r" ",
+		r"&#91;": r"[",
+		r"&#93;": r"]",
+	})
+	return ensure_str(r)
+
+
 def xml_unescape(text):
 	if not isinstance(text, basestring):
 		return ''
@@ -65,37 +92,6 @@ def xml_unescape(text):
 			}
 		)
 	)
-
-
-def get_xml_string(elem, name):
-	r = ''
-	try:
-		for node in elem.findall(name):
-			txt = node.text
-			lang = node.get('lang', None)
-			if not r and txt is not None:
-				r = txt
-			elif lang == "nl":
-				r = txt
-	except Exception as e:
-		print("[XMLTVConverter] get_xml_string error:", e)
-
-	# Ora ritorniamo UTF-8 di default
-	r = unescape(r, entities={
-		r"&apos;": r"'",
-		r"&quot;": r'"',
-		r"&#124;": r"|",
-		r"&nbsp;": r" ",
-		r"&#91;": r"[",
-		r"&#93;": r"]",
-	})
-
-	try:
-		# Assicura che il risultato sia una stringa
-		return r.encode('utf-8').decode('utf-8')  # Compatibile con Python 2 e 3
-	except UnicodeEncodeError as e:
-		print("[XMLTVConverter] Encoding error:", e)
-		return r  # Ritorna come fallback
 
 
 def enumerateXML(fp, tag=None):

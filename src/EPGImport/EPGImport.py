@@ -53,6 +53,8 @@ CheckFile = "LastUpdate.txt"
 ServerStatusList = {}
 PARSERS = {'xmltv': 'gen_xmltv', 'genxmltv': 'gen_xmltv'}
 sslverify = False
+
+
 try:
 	from twisted.internet._sslverify import ClientTLSOptions
 	from twisted.internet import ssl
@@ -110,6 +112,7 @@ def relImport(name):
 	mod = __import__('.'.join(fullname))
 	for n in fullname[1:]:
 		mod = getattr(mod, n)
+
 	return mod
 
 
@@ -131,15 +134,15 @@ def getTimeFromHourAndMinutes(hour, minute):
 
 	# Calculate the timestamp for the specified time (today with the given hour and minute)
 	begin = int(time.mktime((
-		now.tm_year,     # Current year
-		now.tm_mon,      # Current month
-		now.tm_mday,     # Current day
-		hour,            # Specified hour
-		minute,          # Specified minute
-		0,               # Seconds (set to 0)
-		now.tm_wday,     # Day of the week
-		now.tm_yday,     # Day of the year
-		now.tm_isdst     # Daylight saving time (DST)
+		now.tm_year,	 # Current year
+		now.tm_mon,		 # Current month
+		now.tm_mday,	 # Current day
+		hour,			 # Specified hour
+		minute,			 # Specified minute
+		0,				 # Seconds (set to 0)
+		now.tm_wday,	 # Day of the week
+		now.tm_yday,	 # Day of the year
+		now.tm_isdst	 # Daylight saving time (DST)
 	)))
 	return begin
 
@@ -152,7 +155,6 @@ def bigStorage(minFree, default, *candidates):
 			return default
 	except Exception as e:
 		print("[EPGImport][bigStorage] Failed to stat %s:" % default, str(e))
-
 	# mountpoints = getMountPoints()
 	with open('/proc/mounts', 'rb') as f:
 		# format: device mountpoint fstype options #
@@ -217,7 +219,9 @@ class EPGImport:
 	def checkValidServer(self, serverurl):
 		print("[EPGImport][checkValidServer]serverurl %s" % serverurl)
 		dirname, filename = split(serverurl)
-		FullString = dirname + '/' + CheckFile
+		if pythonVer == 3:
+			dirname = dirname.decode()
+		FullString = dirname + "/" + CheckFile
 		req = build_opener()
 		req.addheaders = [('User-Agent', 'Twisted Client')]
 		dlderror = 0
@@ -227,7 +231,7 @@ class EPGImport:
 		else:
 			# Server not in the list so checking it
 			try:
-				response = req.open(FullString)
+				response = req.open(FullString, timeout=5)
 			except HTTPError as e:
 				print('[EPGImport][checkValidServer] HTTPError in checkValidServer= ' + str(e.code))
 				dlderror = 1
@@ -243,15 +247,12 @@ class EPGImport:
 
 		if not dlderror:
 			LastTime = response.read().strip('\n')
-			if isinstance(LastTime, bytes):
-				LastTime = LastTime.decode("utf-8", "ignore").strip('\n')  # Decodifica i bytes in stringa
 			try:
 				FileDate = datetime.strptime(LastTime, date_format)
 			except ValueError:
 				print("[EPGImport] checkValidServer wrong date format in file rejecting server %s" % dirname)
 				ServerStatusList[dirname] = 0
 				response.close()
-				return ServerStatusList[dirname]
 
 			delta = (now - FileDate).days
 			if delta <= alloweddelta:
@@ -262,7 +263,6 @@ class EPGImport:
 				log.write("[EPGImport] checkValidServer rejected server delta days too high: " + dirname + '\n')
 				ServerStatusList[dirname] = 0
 				response.close()
-				return ServerStatusList[dirname]
 		else:
 			# We need to exclude this server
 			log.write("[EPGImport] checkValidServer rejected server download error for: " + dirname + '\n')
@@ -272,12 +272,9 @@ class EPGImport:
 	def beginImport(self, longDescUntil=None):
 		"""Starts importing using Enigma reactor. Set self.sources before calling this."""
 		if hasattr(self.epgcache, 'importEvents'):
-			# print('[EPGImport][beginImport] using importEvents.')
 			self.storage = self.epgcache
 		elif hasattr(self.epgcache, 'importEvent'):
-			# print('[EPGImport][beginImport] using importEvent(Oudis).')
 			self.storage = OudeisImporter(self.epgcache)
-			self.saveEPGCache()  # lululla
 		else:
 			print('[EPGImport][beginImport] oudeis patch not detected, using using epgdat_importer.epgdatclass/epg.dat instead.')
 			from . import epgdat_importer
@@ -289,7 +286,6 @@ class EPGImport:
 		else:
 			self.longDescUntil = longDescUntil
 		self.nextImport()
-		return
 
 	def nextImport(self):
 		self.closeReader()
@@ -311,14 +307,13 @@ class EPGImport:
 			self.urlDownload(filename, self.afterDownload, self.downloadFail)
 		else:
 			self.afterDownload(None, filename, deleteFile=False)
-		return
 
 	def urlDownload(self, sourcefile, afterDownload, downloadFail):
 		path = bigStorage(9000000, '/hdd', *mount_points)
 		if not path or not isdir(path):
 			print("[EPGImport] Invalid path, using '/tmp'")
 			path = '/tmp'  # Use fallback /tmp if invalid path, using.
-		if "meia" in path:  # mistake ("media != meia)
+		if "meia" in path:	# mistake ("media != meia)
 			path = path.replace("meia", "media")
 		filename = join(path, 'epgimport')
 		ext = splitext(sourcefile)[1]
@@ -335,8 +330,7 @@ class EPGImport:
 			try:
 				ip6 = getaddrinfo(host, 0, AF_INET6)
 				sourcefile6 = sourcefile.replace(host, '[' + list(ip6)[0][4][0] + ']')
-			except Exception as e:
-				# print(str(e))
+			except:
 				pass
 
 		if ip6:
@@ -400,7 +394,11 @@ class EPGImport:
 				self.fd.seek(0, 0)
 			except Exception as e:
 				print("[EPGImport][afterDownload] File downloaded is not a valid gzip file %s" % filename)
-				unlink_if_exists(filename)
+				try:
+					print("[EPGImport][afterDownload] unlink", filename)
+					unlink_if_exists(filename)
+				except Exception as e:
+					print("[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" % filename, str(e))
 				self.downloadFail(e)
 				return
 
@@ -440,12 +438,9 @@ class EPGImport:
 			filename = random.choice(self.channelFiles)
 			self.channelFiles.remove(filename)
 			self.urlDownload(filename, self.afterChannelDownload, self.channelDownloadFail)
-		return
 
 	def downloadFail(self, failure):
 		# log.write("[EPGImport][downloadFail] download failed:" + failure + '\n')
-		if self.source.url in self.source.urls:
-			self.source.urls.remove(self.source.url)
 		self.source.urls.remove(self.source.url)
 		if self.source.urls:
 			print("[EPGImport][downloadFail] Attempting alternative URL")
@@ -468,7 +463,7 @@ class EPGImport:
 		if twisted.python.runtime.platform.supportsThreads():
 			print("[EPGImport][afterChannelDownload] Using twisted thread")
 			threads.deferToThread(self.doThreadRead, filename).addCallback(lambda ignore: self.nextImport())
-			deleteFile = False  # Thread will delete it
+			deleteFile = False	# Thread will delete it
 		else:
 			self.iterator = self.createIterator(filename)
 			reactor.addReader(self)
@@ -485,7 +480,6 @@ class EPGImport:
 			filename = random.choice(self.channelFiles)
 			if filename in self.channelFiles:
 				self.channelFiles.remove(filename)
-			print("[EPGImport][channelDownloadFail] File not in list, skipping remove:", filename)
 			self.urlDownload(filename, self.afterChannelDownload, self.channelDownloadFail)
 		else:
 			log.write("[EPGImport][channelDownloadFail]no more alternatives for channels" + '\n')
@@ -518,7 +512,6 @@ class EPGImport:
 
 			print("[EPGImport][readEpgDatFile] Importing", HDD_EPG_DAT)
 			self.epgcache.load()
-
 			if deleteFile:
 				unlink_if_exists(filename)
 		except Exception as e:
@@ -543,15 +536,12 @@ class EPGImport:
 					self.storage.importEvents(r, (d,))
 				except Exception as e:
 					print("[EPGImport][doThreadRead] ### importEvents exception:", str(e))
-
 		print("[EPGImport][doThreadRead] ### thread is ready ### Events:", self.eventCount)
 		if filename:
 			try:
 				unlink_if_exists(filename)
 			except Exception as e:
 				print("[EPGImport][doThreadRead] warning: Could not remove '%s' intermediate" % filename, str(e))
-
-		return
 
 	def doRead(self):
 		"""called from reactor to read some data"""
@@ -567,11 +557,8 @@ class EPGImport:
 					self.storage.importEvents(r, (d,))
 				except Exception as e:
 					print("[EPGImport][doRead] importEvents exception:", str(e))
-
 		except StopIteration:
 			self.nextImport()
-
-		return
 
 	def connectionLost(self, failure):
 		"""called from reactor on lost connection"""
@@ -625,7 +612,6 @@ class EPGImport:
 
 		self.eventCount = None
 		log.write("[EPGImport] #### Finished ####" + '\n')
-		return
 
 	def isImportRunning(self):
 		return self.source is not None

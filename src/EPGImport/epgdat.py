@@ -4,6 +4,7 @@
 # Lots of stuff removed that i did not need.
 
 from __future__ import absolute_import, print_function
+
 import os
 import struct
 from datetime import datetime
@@ -123,6 +124,7 @@ def TL_hexconv(dt):
 
 class epgdat_class:
 	# temp files used for EPG.DAT creation
+
 	LAMEDB = '/etc/enigma2/lamedb'
 
 	EPGDAT_FILENAME = 'epgtest.dat'
@@ -310,7 +312,6 @@ class epgdat_class:
 			epgdat_fd.write(pack_1)
 			# event MUST BE WRITTEN IN ASCENDING ORDERED using HASH CODE as index
 			for temp in sorted(list(self.EPGDAT_HASH_EVENT_MEMORY_CONTAINER.keys())):
-				# for temp in sorted(self.EPGDAT_HASH_EVENT_MEMORY_CONTAINER.keys()):
 				pack_2 = self.EPGDAT_HASH_EVENT_MEMORY_CONTAINER[temp]
 				# pack_1 = struct.pack(LB_ENDIAN + "II", int(temp,16), pack_2[1])
 				pack_1 = s_ii.pack(temp, pack_2[1])

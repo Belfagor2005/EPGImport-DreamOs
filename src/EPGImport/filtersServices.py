@@ -181,7 +181,10 @@ class filtersServicesSetup(Screen):
 		self["introduction"] = Label(_("press OK to save list"))
 		self.updateButtons()
 		self["actions"] = ActionMap(
-			["OkCancelActions", "ColorActions"],
+			[
+				"OkCancelActions",
+				"ColorActions"
+			],
 			{
 				"cancel": self.exit,
 				"ok": self.keyOk,

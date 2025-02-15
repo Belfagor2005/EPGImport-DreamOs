@@ -84,7 +84,7 @@ def findNewEpg():
 	return None
 
 
-epg = '/etc/enigma2/epg.dat'
+epg = '/hdd/epg.dat'
 newepg = findNewEpg()
 
 if config.misc.epgcache_filename.value:

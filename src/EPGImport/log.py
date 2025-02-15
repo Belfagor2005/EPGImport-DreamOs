@@ -6,8 +6,10 @@
 # because the log unit looks enough like a file!
 
 from __future__ import absolute_import
+
 import sys
 import threading
+
 
 try:  # python2 only
 	from cStringIO import StringIO
@@ -26,7 +28,6 @@ def write(data):
 			logfile.seek(0)
 			logfile.truncate(0)  # Clear the buffer
 		logfile.write(data)
-		# logfile.write('\n')
 	sys.stdout.write(data)
 
 
