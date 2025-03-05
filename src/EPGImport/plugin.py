@@ -1,6 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from os import remove, makedirs, listdir
+from os.path import exists, join, isdir
+from time import localtime, mktime, strftime, strptime, time, asctime
 
+from enigma import eServiceCenter, eServiceReference, eEPGCache, eTimer, getDesktop
 from . import _
 from . import log
 from . import ExpandableSelectionList
@@ -19,7 +23,6 @@ from Components.Label import Label
 
 from Components.Sources.StaticText import StaticText
 from enigma import eConsoleAppContainer, eDVBDB
-from enigma import eEPGCache, getDesktop, eTimer, eServiceCenter, eServiceReference
 from Plugins.Plugin import PluginDescriptor
 from Screens.ChoiceBox import ChoiceBox
 from Screens.LocationBox import LocationBox
@@ -27,16 +30,14 @@ from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 from Screens.VirtualKeyBoard import VirtualKeyBoard
 from ServiceReference import ServiceReference
-from time import mktime, strptime
 from Tools import Notifications
 from Tools.Directories import SCOPE_PLUGINS, fileExists, resolveFilename
 from Tools.FuzzyDate import FuzzyTime
 from Tools.DreamboxHardware import getFPWasTimerWakeup
 import Components.PluginComponent
 import NavigationInstance
-import os
+# import os
 import Screens.Standby
-import time
 import shutil
 import subprocess
 
@@ -63,30 +64,6 @@ def calcDefaultStarttime():
 	except:
 		offset = 7680
 	return (5 * 60 * 60) + offset
-
-
-def getMountPoints():
-	mount_points = []
-	try:
-		from os import access, W_OK
-		with open('/proc/mounts', 'r') as mounts:
-			for line in mounts:
-				parts = line.split()
-				mount_point = parts[1]
-				if os.path.ismount(mount_point) and access(mount_point, W_OK):
-					mount_points.append(mount_point)
-	except Exception as e:
-		print("[EPGImport] Error reading /proc/mounts:", e)
-	return mount_points
-
-
-mount_points = getMountPoints()
-mount_point = None
-for mp in mount_points:
-	epg_path = os.path.join(mp, 'epg.dat')
-	if os.path.exists(epg_path):
-		mount_point = epg_path
-		break
 
 
 # HDD_EPG_DAT = mount_point or '/etc/enigma2/epg.dat'
@@ -270,7 +247,7 @@ def channelFilter(ref):
 		# print("URL detected in serviceref, not checking fake recording on serviceref:", ref)
 		return True
 
-	if os.path.exists("/var/lib/dpkg/status"):
+	if exists("/var/lib/dpkg/status"):
 		strref = str(ref)
 		ssid = strref.split(":")
 		if int(ssid[0]) == 1 and (int(ssid[6], 16) & 0xFFFF0000) == 0xEEEE0000:
@@ -617,7 +594,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 	def openDirectoryBrowserCB(self, config_entry):
 		def callback(path):
 			if path is not None:
-				pathz = os.path.join(path, 'epg.dat')
+				pathz = join(path, 'epg.dat')
 				print("epg path=:", pathz)
 				self.EPG.pathdb.setValue(pathz)
 		return callback
@@ -849,18 +826,18 @@ class EPGImportSources(Screen):
 			epg_import_dir = '/etc/epgimport'
 
 			try:
-				if not os.path.exists(TMPSources):
-					os.makedirs(TMPSources)  # Funziona in entrambi i casi
-				if not os.path.exists(epg_import_dir):
-					os.makedirs(epg_import_dir)  # Funz
+				if not exists(TMPSources):
+					makedirs(TMPSources)  # Funziona in entrambi i casi
+				if not exists(epg_import_dir):
+					makedirs(epg_import_dir)  # Funz
 
 				url = 'https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz'
 				self.download_file(url, TMPSources)
 
-				tar_file = os.path.join(TMPSources, 'main.tar.gz')
+				tar_file = join(TMPSources, 'main.tar.gz')
 				self.extract_tar(tar_file, TMPSources)
 
-				src_dir = os.path.join(TMPSources, 'EPGimport-Sources-main')
+				src_dir = join(TMPSources, 'EPGimport-Sources-main')
 				self.copytree(src_dir, epg_import_dir)
 
 				self.cleanup(TMPSources)
@@ -917,17 +894,17 @@ class EPGImportSources(Screen):
 
 	def copytree(self, src, dst):
 		"""Copy files and directories from one directory to another, excluding .bb files (for Python 2 and 3)."""
-		for item in os.listdir(src):
-			s = os.path.join(src, item)
-			d = os.path.join(dst, item)
+		for item in listdir(src):
+			s = join(src, item)
+			d = join(dst, item)
 			# Skip .bb files
 			if item.endswith('.bb'):
 				print("Skipping .bb file:", item)
 				continue
 
-			if os.path.isdir(s):
-				if not os.path.exists(d):
-					os.makedirs(d)
+			if isdir(s):
+				if not exists(d):
+					makedirs(d)
 				self.copytree(s, d)  # Recursive call
 			else:
 				shutil.copy2(s, d)  # Copy file with metadata
@@ -967,13 +944,13 @@ class EPGImportSources(Screen):
 	def cfg_imp(self):
 		self.source_cfg = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/epgimport.conf")
 		dest_cfg = '/etc/enigma2'  # destination config
-		if not os.path.exists(CONFIG_PATH):
+		if not exists(CONFIG_PATH):
 			try:
-				os.makedirs(CONFIG_PATH)
+				makedirs(CONFIG_PATH)
 			except Exception as e:
 				print("Error creating directory:", CONFIG_PATH, ":", str(e))
 				return
-		if not os.path.exists(os.path.join(dest_cfg, 'epgimport.conf')):
+		if not exists(join(dest_cfg, 'epgimport.conf')):
 			try:
 				import shutil
 				shutil.copy(self.source_cfg, dest_cfg)
@@ -1008,7 +985,7 @@ class EPGImportSources(Screen):
 					self.close(False, None, cfg)
 
 	def do_reset(self):
-		if os.path.exists("/var/lib/dpkg/status"):
+		if exists("/var/lib/dpkg/status"):
 			return
 		from epgdb import epgdb_class
 		epgdbfile = config.misc.epgcache_filename.value
@@ -1270,16 +1247,16 @@ def doneImport(reboot=False, epgfile=None):
 	BouquetChannelListList = None
 	serviceIgnoreList = None
 	#
-	timestamp = time.time()
-	formatted_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
+	timestamp = time()
+	formatted_time = strftime("%Y-%m-%d %H:%M:%S", localtime(timestamp))
 	lastImportResult = (formatted_time, epgimport.eventCount)
 
 	try:
 		if lastImportResult and (lastImportResult != lastImportResult):
 			print('doneImport lastimport==', lastImportResult)
 			start, count = lastImportResult
-			localtime = time.asctime(time.localtime(time.time()))
-			lastimport = "%s, %d" % (localtime, count)
+			local_time = asctime(localtime(time()))
+			lastimport = "%s, %d" % (local_time, count)
 			config.plugins.extra_epgimport.last_import.value = lastimport
 			config.plugins.extra_epgimport.last_import.save()
 			print("[EPGImport] Save last import date and count event")
@@ -1349,7 +1326,7 @@ def restartEnigma(confirmed):
 			log.write("Failed to create /tmp/enigmastandby")
 	else:
 		try:
-			os.remove("/tmp/enigmastandby")
+			remove("/tmp/enigmastandby")
 		except:
 			pass
 	# now reboot
@@ -1495,7 +1472,7 @@ class AutoStartTimer:
 
 	def afterFinishImportCheck(self):
 		if config.plugins.epgimport.deepstandby.value == 'wakeup' and getFPWasTimerWakeup():
-			if os.path.exists("/tmp/enigmastandby") or os.path.exists("/tmp/.EPGImportAnswerBoot"):
+			if exists("/tmp/enigmastandby") or exists("/tmp/.EPGImportAnswerBoot"):
 				log.write("[EPGImport] is restart enigma2")
 			else:
 				wake = self.getStatus()
@@ -1581,7 +1558,7 @@ def onBootStartCheck():
 			log.write("[EPGImport] is automatic boot")
 		flag = '/tmp/.EPGImportAnswerBoot'
 		if config.plugins.epgimport.runboot_restart.value:
-			if os.path.exists(flag):
+			if exists(flag):
 				on_start = False
 				log.write("[EPGImport] not starting import - is restart enigma2")
 			else:
@@ -1617,12 +1594,12 @@ def autostart(reason, session=None, **kwargs):
 			if config.plugins.epgimport.runboot.value != "4":
 				onBootStartCheck()
 		# If WE caused the reboot, put the box back in standby.
-		if os.path.exists("/tmp/enigmastandby"):
+		if exists("/tmp/enigmastandby"):
 			log.write("[EPGImport] Returning to standby")
 			if not Screens.Standby.inStandby:
 				Notifications.AddNotification(Screens.Standby.Standby)
 			try:
-				os.remove("/tmp/enigmastandby")
+				remove("/tmp/enigmastandby")
 			except:
 				pass
 	else:

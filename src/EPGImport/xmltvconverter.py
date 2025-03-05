@@ -2,8 +2,8 @@ from __future__ import print_function
 
 from . filterCustomChannel import get_xml_string, get_xml_rating_string
 from xml.etree.cElementTree import iterparse
-import calendar
-import time
+from calendar import timegm
+from time import strptime, struct_time
 
 
 try:
@@ -12,28 +12,31 @@ except NameError:
 	basestring = str
 
 
-def quickptime(str):
-	return time.struct_time((int(str[0:4]), int(str[4:6]), int(str[6:8]), int(str[8:10]), int(str[10:12]), 0, -1, -1, 0))
+def quickptime(date_str):
+	return struct_time(
+		(
+			int(date_str[0:4]),     # Year
+			int(date_str[4:6]),     # Month
+			int(date_str[6:8]),     # Day
+			int(date_str[8:10]),    # Hour
+			int(date_str[10:12]),   # Minute
+			0,                      # Second (set to 0)
+			-1,                     # Weekday (set to -1 as unknown)
+			-1,                     # Julian day (set to -1 as unknown)
+			0                       # DST (Daylight Saving Time, set to 0 as unknown)
+		)
+	)
 
 
 def get_time_utc(timestring, fdateparse):
-	"""
-	Converts a timestring with an offset into UTC time.
-	Args:
-		timestring: A string in the format "YYYYMMDDhhmmss +HHMM" or similar.
-		fdateparse: A function to parse the date portion of the timestring.
-	Returns:
-		The UTC time as a Unix timestamp or 0 in case of an error.
-	"""
-
 	try:
-		values = timestring.split(' ')
+		values = timestring.split(" ")
 		if len(values) < 2:
 			raise ValueError("Invalid timestring format, missing offset")
 		tm = fdateparse(values[0])
-		timegm = calendar.timegm(tm)
-		timegm -= (3600 * int(values[1]) // 100)
-		return timegm
+		time_gm = timegm(tm)
+		time_gm -= (3600 * int(values[1]) // 100)
+		return time_gm
 	except Exception as e:
 		print("[XMLTVConverter] get_time_utc error:", e)
 		return 0
@@ -121,36 +124,34 @@ def get_xml_language(elem, name):
 				#
 				else:
 					print("[XMLTVConverter] unmapped language:", lang)
-#                   r = lang
 					r = 'eng'
 	except Exception as e:
 		print("[XMLTVConverter] get_xml_string error:", e)
-	return r.encode('utf-8')
+	return r.decode() if isinstance(r, bytes) else r
 
 
 def enumerateProgrammes(fp):
 	"""Enumerates programme ElementTree nodes from file object 'fp'"""
 	for event, elem in iterparse(fp):
 		try:
-			if elem.tag == 'programme':
+			if elem.tag == "programme":
 				yield elem
 				elem.clear()
-			elif elem.tag == 'channel':
+			elif elem.tag == "channel":
 				# Throw away channel elements, save memory
 				elem.clear()
 		except Exception as e:
 			print("[XMLTVConverter] enumerateProgrammes error:", e)
-			break
 
 
 class XMLTVConverter:
-	def __init__(self, channels_dict, category_dict, dateformat='%Y%m%d%H%M%S %Z'):
+	def __init__(self, channels_dict, category_dict, dateformat="%Y%m%d%H%M%S %Z"):
 		self.channels = channels_dict
 		self.categories = category_dict
-		if dateformat.startswith('%Y%m%d%H%M%S'):
+		if dateformat.startswith("%Y%m%d%H%M%S"):
 			self.dateParser = quickptime
 		else:
-			self.dateParser = lambda x: time.strptime(x, dateformat)
+			self.dateParser = lambda x: strptime(x, dateformat)
 
 	def enumFile(self, fileobj):
 		print("[XMLTVConverter] Enumerating event information")
@@ -159,7 +160,7 @@ class XMLTVConverter:
 		if not self.channels:
 			return
 		for elem in enumerateProgrammes(fileobj):
-			channel = elem.get('channel')
+			channel = elem.get("channel")
 			channel = channel.lower()
 			if channel not in self.channels:
 				if lastUnknown != channel:
@@ -170,13 +171,20 @@ class XMLTVConverter:
 				continue
 			try:
 				services = self.channels[channel]
-				start = get_time_utc(elem.get('start'), self.dateParser)
-				stop = get_time_utc(elem.get('stop'), self.dateParser)
-				title = get_xml_string(elem, 'title')
-				# language = get_xml_language(elem, 'title')
-				subtitle = get_xml_string(elem, 'sub-title')
-				description = get_xml_string(elem, 'desc')
-				category = get_xml_string(elem, 'category')
+				start = get_time_utc(elem.get("start"), self.dateParser) + self.offset
+				stop = get_time_utc(elem.get("stop"), self.dateParser) + self.offset
+				title = get_xml_string(elem, "title")
+				# try/except for EPG XML files with program entries containing <sub-title ... />
+				try:
+					subtitle = get_xml_string(elem, "sub-title")
+				except:
+					subtitle = ""
+				# try/except for EPG XML files with program entries containing <desc ... />
+				try:
+					description = get_xml_string(elem, "desc")
+				except:
+					description = ""
+				category = get_xml_string(elem, "category")
 				cat_nr = self.get_category(category, stop - start)
 
 				try:
@@ -206,5 +214,5 @@ class XMLTVConverter:
 				if duration > 60 * category[1]:
 					return category[0]
 			elif len(category) > 0:
-				return category[0]
+				return category
 		return 0
