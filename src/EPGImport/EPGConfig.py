@@ -326,19 +326,6 @@ def enumSources(path, filter=None, categories=False):
 		print("[EPGImport]enumSources failed to list", path, "Error:", e)
 
 
-# def loadUserSettings(filename=SETTINGS_FILE):
-	# try:
-		# return pickle.load(open(filename, 'rb'))
-	# except Exception as e:
-		# print("[EPGImport]loadUserSettings No settings", e)
-		# return {"sources": []}
-
-
-# def storeUserSettings(filename=SETTINGS_FILE, sources=None):
-	# container = {"[EPGImport]loadUserSettings sources": sources}
-	# pickle.dump(container, open(filename, 'wb'), pickle.HIGHEST_PROTOCOL)
-
-
 def storeUserSettings(filename=SETTINGS_FILE, sources=None):
 	if sources is None:
 		sources = []
