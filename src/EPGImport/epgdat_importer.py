@@ -1,34 +1,19 @@
 from __future__ import absolute_import, print_function
-from os import popen, access, W_OK
-from os.path import join, ismount
-from sys import platform
-from . import epgdat
+import os
+# if os.path.exists("/var/lib/dpkg/status"):
+	# import epgdb
+# else:
+	# import epgdat
+import sys
 
-
+from . import epgdb
 # Hack to make this test run on Windows (where the reactor cannot handle files)
-if platform.startswith("win"):
-	tmppath = "."
-	settingspath = "."
+if sys.platform.startswith('win'):
+	tmppath = '.'
+	settingspath = '.'
 else:
-	tmppath = "/tmp"
-	settingspath = "/etc/enigma2"
-
-
-def getMountPoints():
-	mount_points = []
-	try:
-		with open('/proc/mounts', 'r') as mounts:
-			for line in mounts:
-				parts = line.split()
-				mount_point = parts[1]
-				if ismount(mount_point) and access(mount_point, W_OK):
-					mount_points.append(mount_point)
-	except Exception as e:
-		print("[EPGImport] Error reading /proc/mounts:", e)
-	return mount_points
-
-
-mount_points = getMountPoints()
+	tmppath = '/tmp'
+	settingspath = '/etc/enigma2'
 
 
 class epgdatclass:
@@ -36,13 +21,24 @@ class epgdatclass:
 		self.data = None
 		self.services = None
 		path = tmppath
-		for p in ["/media/cf", "/media/mmc", "/media/usb", "/media/hdd"]:
-			if self.checkPath(p):
-				path = p
-				break
-
-		self.epgfile = join(path, "epg_new.dat")
-		self.epg = epgdat.epgdat_class(path, settingspath, self.epgfile)
+		if self.checkPath('/media/cf'):
+			path = '/media/cf'
+		if self.checkPath('/media/mmc'):
+			path = '/media/mmc'
+		if self.checkPath('/media/usb'):
+			path = '/media/usb'
+		if self.checkPath('/media/hdd'):
+			path = '/media/hdd'
+		# if os.path.exists("/var/lib/dpkg/status"):
+		from Components.config import config
+		self.epgdbfile = config.misc.epgcache_filename.value
+		print("[EPGDB] is located at %s" % self.epgdbfile)
+		provider_name = "Rytec XMLTV"
+		provider_priority = 99
+		self.epg = epgdb.epgdb_class(provider_name, provider_priority, self.epgdbfile, config.plugins.epgimport.clear_oldepg.value)
+		# else:
+			# self.epgfile = os.path.join(path, 'epg_new.dat')
+			# self.epg = epgdat.epgdat_class(path, settingspath, self.epgfile)
 
 	def importEvents(self, services, dataTupleList):
 		'''This method is called repeatedly for each bit of data'''
@@ -54,7 +50,7 @@ class epgdatclass:
 				desc = program[3] + '\n' + program[4]
 			else:
 				desc = program[4]
-			self.epg.add_event(program[0], program[1], program[2], desc)
+			self.epg.add_event(program[0], program[1], program[2], desc, program[6])
 
 	def commitService(self):
 		if self.services is not None:
@@ -71,13 +67,13 @@ class epgdatclass:
 		self.epg = None
 
 	def checkPath(self, path):
-		f = popen("mount", "r")
-		for ln in f:
-			if ln.find(path) != - 1:
+		f = os.popen('mount', "r")
+		for lx in f.xreadlines():
+			if lx.find(path) != - 1:
 				return True
 		return False
 
 	def __del__(self):
-		"""Destructor - finalize the file when done"""
+		'Destructor - finalize the file when done'
 		if self.epg is not None:
 			self.epg_done()
