@@ -348,15 +348,15 @@ def enumSources(path, filter=None, categories=False):
 
 
 def loadUserSettings(filename=SETTINGS_FILE):
-	try:
-		return load(open(filename, 'rb'))
-	except Exception as e:
-		return {"sources": []}
+    try:
+        return load(open(filename, 'rb'))
+    except Exception as e:
+        return {"sources": []}
 
 
 def storeUserSettings(filename=SETTINGS_FILE, sources=None):
-	container = {"sources": sources}
-	dump(container, open(filename, 'wb'), HIGHEST_PROTOCOL)
+    container = {"sources": sources}
+    dump(container, open(filename, 'wb'), HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
