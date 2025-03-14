@@ -53,14 +53,14 @@ class FiltersList():
     def loadFrom(self, filename):
         try:
             with open(filename, "r") as cfg:
-				for line in cfg:
+                for line in cfg:
                     if line[0] in "#;\n":
                         continue
                     ref = line.strip()
                     if ref not in self.services:
                         self.services.append(ref)
         except Exception as e:
-            print "Error loading from %s: %s" % (filename, e)
+            print("Error loading from %s: %s" % (filename, e))
 
     def saveTo(self, filename):
         try:
@@ -239,15 +239,15 @@ class filtersServicesSetup(Screen):
         self.RefList.save()
         self.close()
 
-	def updateList(self):
-		self.list = []
-		for service in self.RefList.servicesList():
-			if any(x in service for x in ("1:0:", "4097:0:", "5001:0:", "5002:0:")):
-				provname = getProviderName(eServiceReference(service))
-				servname = ServiceReference(service).getServiceName() or "N/A"
-				self.list.append((servname, provname, service))
-		self["list"].setList(self.list)
-		self["list"].updateList(self.list)
+    def updateList(self):
+        self.list = []
+        for service in self.RefList.servicesList():
+            if any(x in service for x in ("1:0:", "4097:0:", "5001:0:", "5002:0:")):
+                provname = getProviderName(eServiceReference(service))
+                servname = ServiceReference(service).getServiceName() or "N/A"
+                self.list.append((servname, provname, service))
+        self["list"].setList(self.list)
+        self["list"].updateList(self.list)
 
     def updateButtons(self):
         if len(self.list):

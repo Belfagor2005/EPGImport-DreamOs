@@ -66,12 +66,12 @@ def threadGetPage(url=None, file=None, urlheaders=None, success=None, fail=None,
 
 	except HTTPError as httperror:
 		print("EPGImport][threadGetPage] Http error: ", httperror)
-		fail(httperror)  # E0602 undefined name "error"
+		print(httperror)  # E0602 undefined name "error"
 
 	except RequestException as error:
-		print("[EPGImport][threadGetPage] error: ", error)
-		# if fail is not None:
-		fail(error)
+		("[EPGImport][threadGetPage] error: ", error)
+		# if print is not None:
+		print(error)
 
 
 def relImport(name):
