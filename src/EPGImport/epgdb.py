@@ -9,8 +9,8 @@ from Components.config import config
 from enigma import eTimer
 import time
 
-GREENC = '\033[32m'
-ENDC = '\033[m'
+GREENC = "\033[32m"
+ENDC = "\033[m"
 
 
 def cprint(text):
@@ -123,7 +123,7 @@ class epgdb_class:
 				self.connection.commit()
 				cprint("ADDED %s EPG with source_id %d" % (self.source_name, self.source_id))
 			# begin transaction  ....
-			self.cursor.execute('BEGIN')
+			self.cursor.execute("BEGIN")
 			cprint("CONNNECT %s FINISHED" % self.epgdb_path)
 			return True
 		except:
@@ -160,7 +160,7 @@ class epgdb_class:
 		# now we go through all the channels we got
 		for service in services:
 			# prepare and write CHANNEL INFO record
-			channel = ServiceReference(str(service)).getServiceName().encode('ascii', 'ignore')
+			channel = ServiceReference(str(service)).getServiceName().encode("ascii", "ignore")
 			if len(channel) == 0:
 				channel = str(service)
 			ssid = service.split(":")
@@ -289,7 +289,7 @@ class epgdb_class:
 			cprint("STILL NOT CONNECTED, sorry")
 			return
 		cprint("IMPORT CANCELED")
-		self.cursor.execute('END')
+		self.cursor.execute("END")
 		self.cursor.close()
 		self.connection.close()
 		self.connection = None
@@ -301,7 +301,7 @@ class epgdb_class:
 		cprint("IMPORT FINISHED and from the total available %d events %d were imported." % (self.EPG_TOTAL_EVENTS, self.events_in_import_range_journal))
 		cprint("%d Events were outside of the defined timespan(%d hours outdated and timespan %d days)." % (self.events_in_past_journal, self.epg_outdated, self.epg_timespan))
 		try:
-			self.cursor.execute('END')
+			self.cursor.execute("END")
 		except:
 			pass
 		try:
@@ -351,6 +351,12 @@ class epgdb_class:
 		connection.close()
 
 	def check_epgdb(self):
+		try:
+			import MySQLdb
+			print("MySQLdb presente")
+		except ImportError:
+			print("MySQLdb NON presente")
+			return
 		cprint("CHECKS EPG database")
 		text_result = ""
 		connection = sqlite.connect(config.misc.epgcache_filename.value, timeout=10)
@@ -363,7 +369,7 @@ class epgdb_class:
 			text_result = ""
 			for res in result:
 				text_result = text_result + str(res[0])
-		except Exception as e:
+		except MySQLdb.Error as e:
 			text_result = "[EPGDB] Error [%d]: %s" % (e.args[0], e.args[1])
 		cursor.close()
 		connection.close()

@@ -98,12 +98,12 @@ def isExpanded(cat):
 
 def isCategory(item):
 	# Return whether list enty is a Category
-	return hasattr(item[0][2], 'append')
+	return hasattr(item[0][2], "append")
 
 
 class ExpandableSelectionList(MenuList):
 	def __init__(self, tree=None, enableWrapAround=False):
-		'tree is expected to be a list of categories'
+		"tree is expected to be a list of categories"
 		MenuList.__init__(self, [], enableWrapAround, content=eListboxPythonMultiContent)
 
 		if WQHD:

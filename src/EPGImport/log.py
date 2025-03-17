@@ -27,8 +27,8 @@ def write(data):
 			# Move the pointer to the beginning
 			logfile.seek(0)
 			logfile.truncate(0)  # Clear the buffer
-		logfile.write(data)
-	sys.stdout.write(data)
+		logfile.write(data + "\n")  # Add newline after each write
+	sys.stdout.write(data + "\n")  # Add newline when writing to stdout
 
 
 def getvalue():

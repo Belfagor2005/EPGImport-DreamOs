@@ -8,8 +8,8 @@ import gettext
 import os
 
 
-PluginLanguageDomain = 'EPGImport'
-PluginLanguagePath = 'Extensions/EPGImport/locale'
+PluginLanguageDomain = "EPGImport"
+PluginLanguagePath = "Extensions/EPGImport/locale"
 
 
 isDreambox = False
