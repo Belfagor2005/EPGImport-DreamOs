@@ -369,7 +369,7 @@ class epgdb_class:
 			text_result = ""
 			for res in result:
 				text_result = text_result + str(res[0])
-		except MySQLdb.Error as e:
+		except Exception as e:
 			text_result = "[EPGDB] Error [%d]: %s" % (e.args[0], e.args[1])
 		cursor.close()
 		connection.close()
