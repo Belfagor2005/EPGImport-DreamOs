@@ -3,7 +3,7 @@
 
 from __future__ import print_function
 from . import log
-from os import fstat, listdir
+from os import fstat, listdir, remove
 from os.path import exists, getmtime, join, split
 from time import time
 from xml.etree.cElementTree import iterparse
@@ -331,3 +331,29 @@ def storeUserSettings(filename=SETTINGS_FILE, sources=None):
     container = {"sources": sources}
     dump(container, open(filename, "wb"), HIGHEST_PROTOCOL)
 
+
+if __name__ == "__main__":
+    import sys
+    SETTINGS_FILE_PKL = "settings.pkl"
+    x = []
+    ln = []
+    path = "."
+    if len(sys.argv) > 1:
+        path = sys.argv[1]
+    for p in enumSources(path):
+        t = (p.description, p.urls, p.parser, p.format, p.channels, p.nocheck)
+        ln.append(t)
+        print(t)
+        x.append(p.description)
+    storeUserSettings(SETTINGS_FILE_PKL, [1, "twee"])
+    assert loadUserSettings(SETTINGS_FILE_PKL) == {"sources": [1, "twee"]}
+    remove(SETTINGS_FILE_PKL)
+    for p in enumSources(path, x):
+        t = (p.description, p.urls, p.parser, p.format, p.channels, p.nocheck)
+        assert t in ln
+        ln.remove(t)
+    assert not ln
+    for name, c in channelCache.items():
+        print("Update:", name)
+        c.update()
+        print("# of channels:", len(c.items))
