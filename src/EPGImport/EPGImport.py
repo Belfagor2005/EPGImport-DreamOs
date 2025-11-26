@@ -162,9 +162,9 @@ else:
 # Check for DreamOS
 try:
     from enigma import cachestate
-    isDreamOS = True
+    isDreambox = True
 except ImportError:
-    isDreamOS = False
+    isDreambox = False
 
 
 class IgnoreHTTPS(IgnoreHTTPSContextFactory):
@@ -468,7 +468,7 @@ class EPGImport:
 
     def saveEPGCache(self):
         """Save EPG cache to file"""
-        if isDreamOS:
+        if isDreambox:
             self.cacheState_conn = self.epgcache.cacheState.connect(self.cacheStateChanged)
         print("[EPGImport] Save the EPG cache to database file %s ..." % config.misc.epgcache_filename.value)
         self.epgcache.save()
