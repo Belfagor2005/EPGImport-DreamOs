@@ -5,15 +5,16 @@ from __future__ import absolute_import
 # ===============================
 # Standard Library
 # ===============================
-import os
-from os import environ, path
+# import os
+from os import environ  #, path
 from os.path import exists
 from gettext import bindtextdomain, dgettext, gettext
 
 # ===============================
 # Enigma2 / Components
 # ===============================
-from enigma import addFont, getDesktop
+# Commented: from enigma import addFont, getDesktop
+# Commented: from enigma import addFont
 from Components.Language import language
 
 # ===============================
@@ -35,16 +36,19 @@ PluginLanguagePath = "Extensions/EPGImport/locale"
 isDreambox = False
 if exists("/usr/bin/apt-get"):
     isDreambox = True
+
+# ===============================
+# SKIN LOADING - COMMENTED
+# ===============================
+"""
 try:
     ScreenWidth = getDesktop(0).size().width()
 except:
     ScreenWidth = 720
 ScreenWidth = '1080' if ScreenWidth >= 1920 else '720'
 
-
 def getFullPath(fname):
     return resolveFilename(SCOPE_PLUGINS, path.join('Extensions', PluginLanguageDomain, fname))
-
 
 try:
     plugin_skin = ET.parse(getFullPath('skin/%s.xml' % ScreenWidth)).getroot()
@@ -62,12 +66,17 @@ def getSkin(skinName):
         except Exception as e:
             print("[EPGImport] Error getting skin %s: %s" % (skinName, str(e)))
     return ''
+"""
 
 
 def _(txt):
     return gettext.dgettext(PluginLanguageDomain, txt) if txt else ''
 
 
+# ===============================
+# FONT ADDING - COMMENTED
+# ===============================
+"""
 try:
     addFont(getFullPath('skin/%s' % 'epgimport.ttf'), 'EPGImport', 100, False)
 except Exception as e:
@@ -77,6 +86,7 @@ except Exception as e:
         addFont(getFullPath('skin/%s' % 'epgimport.ttf'), 'EPGImport', 100, False, 0)
     except Exception as e2:
         print("[EPGImport] Error adding font (fallback): %s" % str(e2))
+"""
 
 
 def localeInit():
