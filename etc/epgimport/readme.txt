@@ -25,5 +25,6 @@ To install the source XML files, use the following command:
 
 ```sh
 wget -q --no-check-certificate "https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh?inline=false" -O - | /bin/sh
+```
 
 
